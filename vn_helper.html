@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>VN Script Weaver</title>
+<link rel="icon" type="image/png" href="page_icon.png">
+<style>
+:root{
+  --bg:#161312; --panel:#181a1e; --panel2:#202125; --line:#332f3a;
+  --text:#e1dcec; --muted:#998ea8; --accent:#f1aeff; --accent2:#6fffff;
+  --mono:'IBM Plex Mono','Courier New',monospace;
+  --sans:'IBM Plex Sans',system-ui,sans-serif;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){--bg:#eae8f3;--panel:#fff;--panel2:#e0dbee;--line:#c3bdd8;--text:#1f1a24;--muted:#605a71;}
+}
+*{box-sizing:border-box;}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);cursor:url('1.ico'),auto;}
+button,select,input[type=checkbox],input[type=color],.toggle,label.chk{cursor:url('2.ico'),pointer;}
+input[type=text],input[type=number],textarea{cursor:url('3.ico'),text;}
+h1{font-family:var(--mono);font-size:1.3rem;letter-spacing:.02em;margin:0;}
+h2{font-family:var(--mono);font-size:.95rem;color:var(--accent);margin:0 0 10px;text-transform:none;}
+.wrap{max-width:1100px;margin:0 auto;padding:24px 18px 60px;}
+header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;flex-wrap:wrap;gap:6px;}
+.sub{color:var(--muted);font-size:.85rem;max-width:60ch;line-height:1.5;margin:0 0 24px;}
+.grid{display:grid;grid-template-columns:360px 1fr;gap:20px;}
+@media (max-width:800px){.grid{grid-template-columns:1fr;}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px;margin-bottom:18px;}
+.charrow{display:flex;flex-direction:column;gap:6px;margin-bottom:8px;}
+.charrow .row{gap:6px;}
+.charrow .row input[type=text]{flex:1;}
+input[type=text],input[type=number],textarea,select{
+  background:var(--panel2);border:1px solid var(--line);color:var(--text);
+  border-radius:5px;padding:6px 8px;font-family:var(--sans);font-size:.85rem;width:100%;
+}
+textarea{resize:vertical;min-height:44px;font-family:var(--mono);}
+input[type=color]{width:34px;height:30px;padding:0;border:1px solid var(--line);border-radius:5px;background:none;}
+label.f{display:block;font-size:.72rem;color:var(--muted);margin:6px 0 2px;cursor:url('1.ico'),auto;}
+button{
+  background:var(--panel2);color:var(--text);border:1px solid var(--line);
+  border-radius:5px;padding:5px 10px;font-size:.8rem;font-family:var(--sans);
+}
+button:hover{border-color:var(--accent);color:var(--accent);}
+button.primary{background:var(--accent);border-color:var(--accent);color:#1a1310;font-weight:600;}
+button.primary:hover{opacity:.9;color:#1a1310;}
+button.small{padding:2px 7px;font-size:.75rem;}
+button.danger:hover{border-color:#b5544a;color:#b5544a;}
+.cmd{border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:6px;padding:10px 12px;margin-bottom:10px;background:var(--panel2);}
+.cmd[data-type=choice],.cmd[data-type=entry]{border-left-color:var(--accent2);}
+.cmd-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+.badge{font-family:var(--mono);font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;}
+.cmd-btns button{margin-left:3px;}
+.nested{margin:10px 0 4px 14px;padding:10px;border-left:2px dashed var(--line);}
+.opt{border:1px solid var(--line);border-radius:5px;padding:8px;margin-bottom:8px;}
+.opt-head{display:flex;gap:6px;align-items:center;margin-bottom:6px;}
+.opt-head input{flex:1;}
+.addrow{display:flex;gap:6px;margin-top:6px;align-items:center;flex-wrap:wrap;}
+.insertrow{opacity:.45;margin:2px 0;transition:opacity .1s;}
+.insertrow:hover,.insertrow:focus-within{opacity:1;}
+.insertrow select{font-size:.72rem;padding:2px 4px;}
+.insertrow button{font-size:.72rem;padding:2px 6px;}
+.row{display:flex;gap:6px;align-items:center;}
+.chk{display:flex;align-items:center;gap:5px;font-size:.8rem;color:var(--muted);margin:6px 0;}
+.hint{font-size:.72rem;color:var(--muted);margin-top:2px;}
+.toggle{background:none;border:none;color:var(--muted);font-size:.78rem;padding:4px 0;width:100%;text-align:left;}
+.toggle:hover{color:var(--accent);}
+#output{width:100%;min-height:320px;font-family:var(--mono);font-size:.8rem;white-space:pre;background:#0f0d0c;color:#d9cfc4;border:1px solid var(--line);border-radius:6px;padding:14px;overflow:auto;}
+.outbar{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>VN Script Weaver</h1>
+</header>
+<p class="sub">Builds a <code>.gd</code> dialogue script matching the format needed for the <code>Scripted</code> / <code>VNChar</code> / <code>VNOption</code> framework. This helps write the dialogue script.</p>
+
+<div class="grid">
+  <div>
+    <div class="panel">
+      <h2>Load Existing Script</h2>
+      <p class="hint" style="margin-top:0;">Reads a .gd file in the same shape as this tool's output, or a hand-written script, back into the editor.</p>
+      <input type="file" id="loadFile" accept=".gd,text/plain">
+    </div>
+    <div class="panel">
+      <h2>Characters</h2>
+      <div id="charList"></div>
+      <button id="addChar">+ Add Character</button>
+    </div>
+    <div class="panel">
+      <h2>Backgrounds</h2>
+      <div class="hint" style="margin-bottom:6px;">Same one-spritesheet-of-named-variants pattern as a character's face, but shown in the single shared background slot instead of left/center/right. A CG is just a background shown with no characters entered.</div>
+      <div id="bgList"></div>
+      <button id="addBg">+ Add Background</button>
+    </div>
+    <div class="panel">
+      <h2>Asset Paths</h2>
+      <div class="hint" style="margin-bottom:6px;">Set a shared folder path, e.g. prefix <code>res://art/</code> + path <code>akisa_sheet.png</code>. A path that already starts with <code>res://</code> or <code>user://</code> ignores its prefix. Separate prefix fields for spritesheets and scripts.</div>
+      <label class="f">Art prefix (character spritesheets)</label>
+      <input type="text" id="assetPrefix" placeholder="res://art/" value="">
+      <label class="f">Script prefix ("Go to another script")</label>
+      <input type="text" id="scriptPrefix" placeholder="res://dialogue/" value="">
+    </div>
+    <div class="panel">
+      <h2>Output File</h2>
+      <label class="f">Script filename</label>
+      <input type="text" id="filename" value="dialogue_scene.gd">
+      <div class="hint" style="margin-top:8px;">The name of the saved file when hitting "Download" after generating the script.</div>
+    </div>
+    <div class="panel">
+      <h2>Project</h2>
+      <div class="hint" style="margin-bottom:8px;">Save your characters + sequence as a project file so you can reopen and keep editing it later, or use it as a starting point for a new scene.</div>
+      <div class="row" style="margin-bottom:8px;">
+        <button id="saveProjBtn">Save Project (.json)</button>
+      </div>
+      <div class="row">
+        <button id="loadProjBtn">Load Project…</button>
+        <input type="file" id="loadProjFile" accept="application/json" style="display:none;">
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="panel">
+      <h2>Main Sequence (_ready)</h2>
+      <div id="mainSeq"></div>
+
+    </div>
+    <div class="panel">
+      <div class="outbar">
+        <button class="primary" id="genBtn">Generate Script</button>
+        <button id="copyBtn">Copy</button>
+        <button id="dlBtn">Download .gd</button>
+      </div>
+      <textarea id="output" readonly></textarea>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+function newChar(id, varName, displayName, color){
+  return {id, varName, displayName, color, sheetPath:'', frameW:128, frameH:128, variants:[], portraitOpen:false};
+}
+function newBg(id, varName, label){
+  return {id, varName, label, sheetPath:'', frameW:480, frameH:296, variants:[], open:false};
+}
+let state = {
+  assetPrefix: '',
+  scriptPrefix: '',
+  characters: [newChar(1, 'akisa', 'Akisa', '#ffd6e8')],
+  backgrounds: [],
+  sequence: [{type:'dialog', charId:1, text:'Hello, Stranger!'}]
+};
+let cid = 2;
+let bgid = 1;
+
+function el(tag, cls, html){const e=document.createElement(tag); if(cls)e.className=cls; if(html!==undefined)e.innerHTML=html; return e;}
+function field(parent,label,input){const l=el('label','f',label); parent.appendChild(l); parent.appendChild(input); return input;}
+function btn(label,fn,cls){const b=el('button',cls||'small',label); b.onclick=fn; return b;}
+function newSeqEntry(){return [];}
+
+function renderAll(){
+  document.getElementById('assetPrefix').value = state.assetPrefix;
+  document.getElementById('scriptPrefix').value = state.scriptPrefix;
+  renderChars();
+  renderBgList();
+  const mainSeq = document.getElementById('mainSeq');
+  mainSeq.innerHTML='';
+  renderSeq(state.sequence, mainSeq);
+}
+
+function renderBgList(){
+  const list = document.getElementById('bgList');
+  list.innerHTML='';
+  state.backgrounds.forEach((b,i)=>{
+    const card = el('div','cmd');
+    const row = el('div','row');
+    const nameIn = el('input'); nameIn.type='text'; nameIn.value=b.varName; nameIn.placeholder='var_name'; nameIn.style.flex='1';
+    nameIn.oninput=e=>b.varName=e.target.value.replace(/[^a-zA-Z0-9_]/g,'_');
+    nameIn.onblur=renderAll;
+    const labelIn = el('input'); labelIn.type='text'; labelIn.value=b.label; labelIn.placeholder='Label (e.g. Classroom)'; labelIn.style.flex='1';
+    labelIn.oninput=e=>b.label=e.target.value;
+    const del = btn('✕',()=>{state.backgrounds.splice(i,1);renderAll();},'small danger');
+    row.append(nameIn,labelIn,del);
+    card.appendChild(row);
+
+    const toggle = btn((b.open?'▾':'▸')+' Spritesheet',()=>{
+      b.open = !b.open;
+      renderAll();
+    },'toggle');
+    card.appendChild(toggle);
+
+    if(!b.open){
+      list.appendChild(card);
+      return;
+    }
+
+    const nested = el('div','nested');
+    nested.appendChild(el('div','hint','One spritesheet per background. Each variant is a named cell (column, row) in that sheet.'));
+    nested.appendChild(el('label','f','Spritesheet path'));
+    const fsPathRow = el('div','row');
+    const fsPath=el('input'); fsPath.type='text'; fsPath.value=b.sheetPath; fsPath.placeholder=b.varName+'_sheet.png'; fsPath.style.flex='1';
+    const fsPreview = el('div','hint');
+    fsPreview.textContent = '→ '+(resolvePath(b.sheetPath, state.assetPrefix)||'(empty)');
+    fsPath.oninput=e=>{ b.sheetPath=e.target.value; fsPreview.textContent='→ '+(resolvePath(b.sheetPath, state.assetPrefix)||'(empty)'); };
+    fsPathRow.append(fsPath);
+    nested.appendChild(fsPathRow);
+    nested.appendChild(fsPreview);
+    b.frameW = 480; b.frameH = 296;
+    nested.appendChild(el('label','f','Frame width, frame height (locked)'));
+    const fsSizeRow = el('div','row');
+    const fw=el('input'); fw.type='number'; fw.value=480; fw.style.width='70px'; fw.title='Frame width (px)'; fw.disabled=true;
+    const fh=el('input'); fh.type='number'; fh.value=296; fh.style.width='70px'; fh.title='Frame height (px)'; fh.disabled=true;
+    fsSizeRow.append(fw,fh);
+    nested.appendChild(fsSizeRow);
+    nested.appendChild(el('div','hint','The background image/frame should be exactly 480×296 — this matches the fixed display size in scripted.gd.'));
+
+    const vWrap = el('div');
+    vWrap.appendChild(el('label','f','Variants — name, column, row'));
+    b.variants.forEach((v,vi)=>{
+      const vRow = el('div','row'); vRow.style.marginBottom='4px';
+      const vName=el('input'); vName.type='text'; vName.value=v.name; vName.placeholder='day'; vName.style.flex='2';
+      vName.oninput=e=>v.name=e.target.value.replace(/[^a-zA-Z0-9_]/g,'_');
+      vName.onblur=renderAll;
+      const vCol=el('input'); vCol.type='number'; vCol.min='0'; vCol.value=v.col; vCol.style.width='55px'; vCol.title='Column';
+      vCol.oninput=e=>v.col=parseInt(e.target.value)||0;
+      const vRowN=el('input'); vRowN.type='number'; vRowN.min='0'; vRowN.value=v.row; vRowN.style.width='55px'; vRowN.title='Row';
+      vRowN.oninput=e=>v.row=parseInt(e.target.value)||0;
+      const vDel=btn('✕',()=>{b.variants.splice(vi,1);renderAll();},'small danger');
+      vRow.append(vName,vCol,vRowN,vDel);
+      vWrap.appendChild(vRow);
+    });
+    vWrap.appendChild(btn('+ Add Variant',()=>{
+      const n=b.variants.length;
+      b.variants.push({name: n ? 'variant'+(n+1) : 'default', col:n, row:0});
+      renderAll();
+    }));
+    nested.appendChild(vWrap);
+
+    card.appendChild(nested);
+    list.appendChild(card);
+  });
+}
+function renderChars(){
+  const list = document.getElementById('charList');
+  list.innerHTML='';
+  state.characters.forEach((c,i)=>{
+    const card = el('div','cmd');
+    const row = el('div','charrow');
+
+    const nameRow = el('div','row');
+    const nameIn = el('input'); nameIn.type='text'; nameIn.value=c.varName; nameIn.placeholder='var_name';
+    nameIn.oninput=e=>c.varName=e.target.value.replace(/[^a-zA-Z0-9_]/g,'_');
+    nameIn.onblur=renderAll;
+    const dispIn = el('input'); dispIn.type='text'; dispIn.value=c.displayName; dispIn.placeholder='Display Name';
+    dispIn.oninput=e=>c.displayName=e.target.value;
+    dispIn.onblur=renderAll;
+    nameRow.append(nameIn,dispIn);
+
+    const actionRow = el('div','row');
+    const colorIn = el('input'); colorIn.type='color'; colorIn.value=c.color;
+    colorIn.oninput=e=>c.color=e.target.value;
+    const addDialog = btn('+ Dialog',()=>{
+      state.sequence.push({type:'dialog', charId:c.id, text:''});
+      renderAll();
+    },'small');
+    addDialog.title = 'Add a dialogue line for '+c.displayName+' to the end of the main sequence';
+    const del = btn('✕',()=>{state.characters.splice(i,1);renderAll();},'small danger');
+    actionRow.append(colorIn,addDialog,del);
+
+    row.append(nameRow,actionRow);
+    card.appendChild(row);
+
+    const portraitToggle = btn((c.portraitOpen?'▾':'▸')+' Portrait / Spritesheet',()=>{
+      c.portraitOpen = !c.portraitOpen;
+      renderAll();
+    },'toggle');
+    card.appendChild(portraitToggle);
+
+    if(!c.portraitOpen){
+      list.appendChild(card);
+      return;
+    }
+
+    const nested = el('div','nested');
+    nested.appendChild(el('div','hint','One spritesheet per character. Each variation is a named cell (column, row) in that sheet.'));
+    nested.appendChild(el('label','f','Spritesheet path'));
+    const fsPathRow = el('div','row');
+    const fsPath=el('input'); fsPath.type='text'; fsPath.value=c.sheetPath; fsPath.placeholder=c.varName+'_sheet.png'; fsPath.style.flex='1';
+    const fsPreview = el('div','hint');
+    fsPreview.textContent = '→ '+(resolvePath(c.sheetPath, state.assetPrefix)||'(empty)');
+    fsPath.oninput=e=>{ c.sheetPath=e.target.value; fsPreview.textContent='→ '+(resolvePath(c.sheetPath, state.assetPrefix)||'(empty)'); };
+    fsPathRow.append(fsPath);
+    nested.appendChild(fsPathRow);
+    nested.appendChild(fsPreview);
+    nested.appendChild(el('label','f','Frame width, frame height'));
+    const fsSizeRow = el('div','row');
+    const fw=el('input'); fw.type='number'; fw.value=c.frameW; fw.style.width='70px'; fw.title='Frame width (px)';
+    fw.oninput=e=>c.frameW=parseInt(e.target.value)||0;
+    const fh=el('input'); fh.type='number'; fh.value=c.frameH; fh.style.width='70px'; fh.title='Frame height (px)';
+    fh.oninput=e=>c.frameH=parseInt(e.target.value)||0;
+    fsSizeRow.append(fw,fh);
+    nested.appendChild(fsSizeRow);
+
+    const vWrap = el('div');
+    vWrap.appendChild(el('label','f','Variations — name, column, row'));
+    c.variants.forEach((v,vi)=>{
+      const vRow = el('div','row'); vRow.style.marginBottom='4px';
+      const vName=el('input'); vName.type='text'; vName.value=v.name; vName.placeholder='smile'; vName.style.flex='2';
+      vName.oninput=e=>v.name=e.target.value.replace(/[^a-zA-Z0-9_]/g,'_');
+      vName.onblur=renderAll;
+      const vCol=el('input'); vCol.type='number'; vCol.min='0'; vCol.value=v.col; vCol.style.width='55px'; vCol.title='Column';
+      vCol.oninput=e=>v.col=parseInt(e.target.value)||0;
+      const vRowN=el('input'); vRowN.type='number'; vRowN.min='0'; vRowN.value=v.row; vRowN.style.width='55px'; vRowN.title='Row';
+      vRowN.oninput=e=>v.row=parseInt(e.target.value)||0;
+      const vDel=btn('✕',()=>{c.variants.splice(vi,1);renderAll();},'small danger');
+      vRow.append(vName,vCol,vRowN,vDel);
+      vWrap.appendChild(vRow);
+    });
+    vWrap.appendChild(btn('+ Add Variation',()=>{
+      const n=c.variants.length;
+      c.variants.push({name: n ? 'variant'+(n+1) : 'neutral', col:n, row:0});
+      renderAll();
+    }));
+    nested.appendChild(vWrap);
+
+    card.appendChild(nested);
+    list.appendChild(card);
+  });
+}
+document.getElementById('addChar').onclick=()=>{
+  state.characters.push(newChar(cid++, 'char'+(state.characters.length+1), 'Name', '#ffffff'));
+  renderAll();
+};
+document.getElementById('addBg').onclick=()=>{
+  state.backgrounds.push(newBg(bgid++, 'bg'+(state.backgrounds.length+1), 'Background'));
+  renderAll();
+};
+
+function addCommandControl(seq, atIndex){
+  const wrap = el('div','row'+(atIndex!==undefined?' insertrow':''));
+  const sel = el('select');
+  [['dialog','Dialogue Line'],['wait','Wait'],['show','Show (Fade In)'],['hide','Hide (Fade Out)'],
+   ['enter','Show Character (Portrait)'],['exit','Hide Character (Portrait)'],
+   ['background','Show Background'],
+   ['entry','Text Entry'],['choice','Choice Branch'],['goto','Go To Another Script'],
+   ['raw','Raw GDScript Line']].forEach(([v,l])=>{
+    const o=el('option'); o.value=v; o.textContent=l; sel.appendChild(o);
+  });
+  const add = btn(atIndex!==undefined?'+ Insert Here':'+ Add Command',()=>{
+    const node = defaultNode(sel.value);
+    if(atIndex!==undefined) seq.splice(atIndex, 0, node);
+    else seq.push(node);
+    renderAll();
+  },'small');
+  wrap.append(sel,add);
+  return wrap;
+}
+
+function defaultNode(type){
+  switch(type){
+    case 'dialog': return {type:'dialog', charId:null, text:''};
+    case 'wait': return {type:'wait', time:1.0, async:false};
+    case 'show': return {type:'show'};
+    case 'hide': return {type:'hide'};
+    case 'raw': return {type:'raw', code:'# custom line'};
+    case 'entry': return {type:'entry', text:'', placeholder:'', hint:'', required:true, waitForResult:false, funcName:'', thenSeq:newSeqEntry()};
+    case 'choice': return {type:'choice', label:'', waitForResult:false, options:[{label:'Option A', funcName:'', seq:newSeqEntry()}]};
+    case 'enter': return {type:'enter', charId:null, position:'center', face:''};
+    case 'exit': return {type:'exit', position:'center'};
+    case 'background': return {type:'background', bgId:null, variant:''};
+    case 'goto': return {type:'goto', path:'', clearBg:false};
+  }
+}
+
+function renderSeq(seq, container){
+  container.appendChild(addCommandControl(seq, 0));
+  seq.forEach((node,idx)=>{
+    container.appendChild(makeCommandEl(node, seq, idx));
+    container.appendChild(addCommandControl(seq, idx+1));
+  });
+}
+
+function makeCommandEl(node, seq, idx){
+  const div = el('div','cmd'); div.dataset.type=node.type;
+  const head = el('div','cmd-head');
+  head.appendChild(el('span','badge',node.type));
+  const btns = el('span','cmd-btns');
+  btns.append(
+    btn('↑',()=>{if(idx>0){[seq[idx-1],seq[idx]]=[seq[idx],seq[idx-1]];renderAll();}}),
+    btn('↓',()=>{if(idx<seq.length-1){[seq[idx+1],seq[idx]]=[seq[idx],seq[idx+1]];renderAll();}}),
+    btn('✕',()=>{seq.splice(idx,1);renderAll();},'small danger')
+  );
+  head.appendChild(btns);
+  div.appendChild(head);
+  const body = el('div','cmd-body');
+  fillBody(node, body, seq, idx);
+  div.appendChild(body);
+  return div;
+}
+
+function fillBody(node, body, seq, idx){
+  if(node.type==='dialog'){
+    const sel = el('select');
+    const optN = el('option'); optN.value=''; optN.textContent='(Narrator / no speaker)'; sel.appendChild(optN);
+    state.characters.forEach(c=>{
+      const o=el('option'); o.value=c.id; o.textContent=c.displayName+' ('+c.varName+')';
+      if(node.charId===c.id) o.selected=true;
+      sel.appendChild(o);
+    });
+    sel.onchange=e=>node.charId = e.target.value ? parseInt(e.target.value) : null;
+    field(body,'Speaker',sel);
+    const ta = el('textarea'); ta.value=node.text; ta.placeholder='Line text — BBCode like [b] [wave] allowed';
+    ta.oninput=e=>node.text=e.target.value;
+    field(body,'Text',ta);
+  }
+  else if(node.type==='wait'){
+    const n = el('input'); n.type='number'; n.step='0.1'; n.value=node.time;
+    n.oninput=e=>node.time=parseFloat(e.target.value)||0;
+    field(body,'Seconds',n);
+    const c = el('label','chk'); const cb=el('input'); cb.type='checkbox'; cb.checked=node.async;
+    cb.onchange=e=>node.async=e.target.checked;
+    c.append(cb, document.createTextNode('Async (don\'t block the main sequence)'));
+    body.appendChild(c);
+  }
+  else if(node.type==='show'||node.type==='hide'){
+    body.appendChild(el('div','hint', node.type==='show' ? 'Fades dialogue box opacity to 1.' : 'Fades dialogue box opacity to 0.'));
+  }
+  else if(node.type==='enter'){
+    const sel = el('select');
+    const optN=el('option'); optN.value=''; optN.textContent='(choose a character)'; sel.appendChild(optN);
+    state.characters.forEach(c=>{
+      const o=el('option'); o.value=c.id; o.textContent=c.displayName+' ('+c.varName+')';
+      if(node.charId===c.id) o.selected=true;
+      sel.appendChild(o);
+    });
+    sel.onchange=e=>{node.charId = e.target.value ? parseInt(e.target.value) : null; renderAll();};
+    field(body,'Character',sel);
+
+    const posSel = el('select');
+    [['left','Left'],['center','Center'],['right','Right']].forEach(([v,l])=>{
+      const o=el('option'); o.value=v; o.textContent=l; if(node.position===v) o.selected=true; posSel.appendChild(o);
+    });
+    posSel.onchange=e=>node.position=e.target.value;
+    field(body,'Slot',posSel);
+
+    const ch = state.characters.find(c=>c.id===node.charId);
+    const varSel = el('select');
+    const noVar=el('option'); noVar.value=''; noVar.textContent='(default — cell 0, 0)'; varSel.appendChild(noVar);
+    if(ch) ch.variants.forEach(v=>{
+      const o=el('option'); o.value=v.name; o.textContent=v.name;
+      if(node.face===v.name) o.selected=true;
+      varSel.appendChild(o);
+    });
+    varSel.onchange=e=>node.face=e.target.value;
+    field(body,'Variation',varSel);
+    if(ch && ch.variants.length===0) body.appendChild(el('div','hint','This character has no variations yet — add some in the Characters panel.'));
+    if(seq && idx!==undefined){
+      body.appendChild(btn('+ Add Matching Exit Right Below',()=>{
+        seq.splice(idx+1, 0, {type:'exit', position: node.position});
+        renderAll();
+      },'small'));
+    }
+  }
+  else if(node.type==='exit'){
+    const posSel = el('select');
+    [['left','Left'],['center','Center'],['right','Right']].forEach(([v,l])=>{
+      const o=el('option'); o.value=v; o.textContent=l; if(node.position===v) o.selected=true; posSel.appendChild(o);
+    });
+    posSel.onchange=e=>node.position=e.target.value;
+    field(body,'Slot to clear',posSel);
+  }
+  else if(node.type==='background'){
+    const sel = el('select');
+    const optN=el('option'); optN.value=''; optN.textContent='(choose a background)'; sel.appendChild(optN);
+    state.backgrounds.forEach(b=>{
+      const o=el('option'); o.value=b.id; o.textContent=b.label+' ('+b.varName+')';
+      if(node.bgId===b.id) o.selected=true;
+      sel.appendChild(o);
+    });
+    sel.onchange=e=>{node.bgId = e.target.value ? parseInt(e.target.value) : null; renderAll();};
+    field(body,'Background',sel);
+
+    const bg = state.backgrounds.find(b=>b.id===node.bgId);
+    const varSel = el('select');
+    const noVar=el('option'); noVar.value=''; noVar.textContent='(default)'; varSel.appendChild(noVar);
+    if(bg) bg.variants.forEach(v=>{
+      const o=el('option'); o.value=v.name; o.textContent=v.name;
+      if(node.variant===v.name) o.selected=true;
+      varSel.appendChild(o);
+    });
+    varSel.onchange=e=>node.variant=e.target.value;
+    field(body,'Variant',varSel);
+    if(bg && bg.variants.length===0) body.appendChild(el('div','hint','This background has no named variants yet — add some in the Backgrounds panel.'));
+    if(!bg) body.appendChild(el('div','hint','No background selected yet — nothing will be shown until you pick one.'));
+  }
+  else if(node.type==='goto'){
+    const p=el('input'); p.type='text'; p.value=node.path; p.placeholder='dialogue/chapter2.gd';
+    const gPreview = el('div','hint');
+    gPreview.textContent = '→ '+(resolvePath(node.path, state.scriptPrefix)||'(empty)');
+    p.oninput=e=>{ node.path=e.target.value; gPreview.textContent='→ '+(resolvePath(node.path, state.scriptPrefix)||'(empty)'); };
+    field(body,'Target script path',p);
+    body.appendChild(gPreview);
+    const clearRow=el('label','chk'); const clearCb=el('input'); clearCb.type='checkbox'; clearCb.checked=node.clearBg;
+    clearCb.onchange=e=>node.clearBg=e.target.checked;
+    clearRow.append(clearCb, document.createTextNode('Clear background on switch (otherwise it keeps showing until the new script changes it itself)'));
+    body.appendChild(clearRow);
+    body.appendChild(el('div','hint','Hands off to another script using the same text box and portraits — nothing in this sequence after this line will run.'));
+  }
+  else if(node.type==='raw'){
+    const ta = el('textarea'); ta.value=node.code; ta.placeholder='e.g. s.jump(my_callback)';
+    ta.oninput=e=>node.code=e.target.value;
+    field(body,'Raw line(s), inserted as-is',ta);
+  }
+  else if(node.type==='entry'){
+    const t=el('textarea'); t.value=node.text; t.oninput=e=>node.text=e.target.value;
+    field(body,'Prompt text (shown in dialog)',t);
+    const ph=el('input'); ph.type='text'; ph.value=node.placeholder; ph.oninput=e=>node.placeholder=e.target.value;
+    field(body,'Placeholder (prefilled value)',ph);
+    const hint=el('input'); hint.type='text'; hint.value=node.hint; hint.oninput=e=>node.hint=e.target.value;
+    field(body,'Hint text',hint);
+    const reqRow=el('label','chk'); const reqCb=el('input'); reqCb.type='checkbox'; reqCb.checked=node.required;
+    reqCb.onchange=e=>node.required=e.target.checked;
+    reqRow.append(reqCb, document.createTextNode('Required (reopens if left empty)'));
+    body.appendChild(reqRow);
+    const waitRow=el('label','chk'); const waitCb=el('input'); waitCb.type='checkbox'; waitCb.checked=node.waitForResult;
+    waitCb.onchange=e=>node.waitForResult=e.target.checked;
+    waitRow.append(waitCb, document.createTextNode('Pause main sequence until this finishes'));
+    body.appendChild(waitRow);
+    const fn=el('input'); fn.type='text'; fn.value=node.funcName||''; fn.placeholder='auto (e.g. _on_entry_1)';
+    fn.oninput=e=>node.funcName=e.target.value;
+    field(body,'Callback function name (optional)',fn);
+    const nested = el('div','nested');
+    nested.appendChild(el('div','hint','On submit — runs as its own layer:'));
+    renderSeq(node.thenSeq, nested);
+    body.appendChild(nested);
+  }
+  else if(node.type==='choice'){
+    const l=el('input'); l.type='text'; l.value=node.label; l.oninput=e=>node.label=e.target.value;
+    field(body,'Prompt label',l);
+    const waitRow=el('label','chk'); const waitCb=el('input'); waitCb.type='checkbox'; waitCb.checked=node.waitForResult;
+    waitCb.onchange=e=>node.waitForResult=e.target.checked;
+    waitRow.append(waitCb, document.createTextNode('Pause main sequence until a branch finishes'));
+    body.appendChild(waitRow);
+    node.options.forEach((opt,oi)=>{
+      const optDiv = el('div','opt');
+      const oh = el('div','opt-head');
+      const oIn = el('input'); oIn.type='text'; oIn.value=opt.label; oIn.oninput=e=>opt.label=e.target.value;
+      const oDel = btn('✕',()=>{node.options.splice(oi,1);renderAll();},'small danger');
+      oh.append(oIn, oDel);
+      optDiv.appendChild(oh);
+      const oFn=el('input'); oFn.type='text'; oFn.value=opt.funcName||''; oFn.placeholder='auto (e.g. _on_choice1_opt0)';
+      oFn.oninput=e=>opt.funcName=e.target.value;
+      field(optDiv,'Callback function name (optional)',oFn);
+      const nested = el('div','nested');
+      renderSeq(opt.seq, nested);
+      optDiv.appendChild(nested);
+      body.appendChild(optDiv);
+    });
+    body.appendChild(btn('+ Add Option',()=>{node.options.push({label:'Option', seq:newSeqEntry()});renderAll();}));
+  }
+}
+
+// ---- Codegen ----
+function gdstr(str){
+  return '"' + String(str||'').replace(/\\/g,'\\\\').replace(/"/g,'\\"').replace(/\n/g,'\\n') + '"';
+}
+function resolvePath(p, prefix){
+  p = (p||'').trim();
+  if(!p) return '';
+  if(p.startsWith('res://') || p.startsWith('user://')) return p;
+  return (prefix||'').trim() + p;
+}
+function safeFuncName(name, fallback){
+  const n = (name||'').trim();
+  if(!n) return fallback;
+  return n.replace(/[^a-zA-Z0-9_]/g,'_');
+}
+let branchCounter = 0;
+function genSequence(seq, funcs){
+  const lines = [];
+  seq.forEach(node=>{
+    if(node.type==='dialog'){
+      if(node.charId){
+        const ch = state.characters.find(c=>c.id===node.charId);
+        lines.push(`${ch ? ch.varName : 's'}.says(${gdstr(node.text)})`);
+      } else {
+        lines.push(`s.says(${gdstr(node.text)})`);
+      }
+    } else if(node.type==='wait'){
+      lines.push(`s.wait(${node.time}${node.async ? ', true' : ''})`);
+    } else if(node.type==='show'){
+      lines.push('s.show()');
+    } else if(node.type==='hide'){
+      lines.push('s.hide()');
+    } else if(node.type==='raw'){
+      (node.code||'').split('\n').forEach(l=>lines.push(l));
+    } else if(node.type==='enter'){
+      const ch = state.characters.find(c=>c.id===node.charId);
+      if(ch) lines.push(`s.enter(${ch.varName}, ${gdstr(node.position)}, ${gdstr(node.face||'')})`);
+    } else if(node.type==='exit'){
+      lines.push(`s.exit(${gdstr(node.position)})`);
+    } else if(node.type==='background'){
+      const bg = state.backgrounds.find(b=>b.id===node.bgId);
+      if(bg) lines.push(`s.show_background(${bg.varName}, ${gdstr(node.variant||'')})`);
+    } else if(node.type==='goto'){
+      lines.push(`s.goto(preload(${gdstr(resolvePath(node.path, state.scriptPrefix))}), ${node.clearBg ? 'true' : 'false'})`);
+    } else if(node.type==='entry'){
+      branchCounter++;
+      const fname = safeFuncName(node.funcName, `_on_entry_${branchCounter}`);
+      lines.push(`s.entry(${gdstr(node.text)}, ${gdstr(node.placeholder)}, ${gdstr(node.hint)}, ${node.required}, ${fname})`);
+      if(node.waitForResult) lines.push('s.pause()');
+      const fbody = ['s.layer_init()', ...genSequence(node.thenSeq, funcs), 's.layer_start()'];
+      if(node.waitForResult) fbody.push('s.resume()');
+      funcs.push({name:fname, param:'response', body:fbody});
+    } else if(node.type==='choice'){
+      branchCounter++;
+      const cId = branchCounter;
+      let chain = `s.choices(${gdstr(node.label)})`;
+      node.options.forEach((opt,oi)=>{
+        const fname = safeFuncName(opt.funcName, `_on_choice${cId}_opt${oi}`);
+        chain += `.option(${gdstr(opt.label)}, ${fname})`;
+        const fbody = ['s.layer_init()', ...genSequence(opt.seq, funcs), 's.layer_start()'];
+        if(node.waitForResult) fbody.push('s.resume()');
+        funcs.push({name:fname, param:null, body:fbody});
+      });
+      lines.push(chain);
+      if(node.waitForResult) lines.push('s.pause()');
+    }
+  });
+  return lines;
+}
+
+function generateScript(){
+  branchCounter = 0;
+  const funcs = [];
+  const mainLines = genSequence(state.sequence, funcs);
+  const charDecls = state.characters.map(c=>`var ${c.varName} : VNChar`).join('\n');
+  const charInitLines = state.characters.map(c=>{
+    let chain = `${c.varName} = s.character().name(${gdstr(c.displayName)}).color(Color(${gdstr(c.color.slice(1).toUpperCase()+'ff')}))`;
+    if(c.sheetPath) chain += `.face_sheet(preload(${gdstr(resolvePath(c.sheetPath, state.assetPrefix))}), Vector2i(${c.frameW||0}, ${c.frameH||0}))`;
+    c.variants.forEach(v=>{ if(v.name) chain += `.face(${gdstr(v.name)}, ${v.col||0}, ${v.row||0})`; });
+    return chain;
+  });
+  const bgDecls = state.backgrounds.map(b=>`var ${b.varName} : VNBackground`).join('\n');
+  const bgInitLines = state.backgrounds.map(b=>{
+    let chain = `${b.varName} = s.background().name(${gdstr(b.label)})`;
+    if(b.sheetPath) chain += `.sheet(preload(${gdstr(resolvePath(b.sheetPath, state.assetPrefix))}), Vector2i(480, 296))`;
+    b.variants.forEach(v=>{ if(v.name) chain += `.variant(${gdstr(v.name)}, ${v.col||0}, ${v.row||0})`; });
+    return chain;
+  });
+  const funcsCode = funcs.map(f=>{
+    const params = f.param ? `${f.param} : String` : '';
+    const bodyStr = f.body.map(l=>'\t'+l).join('\n');
+    return `func ${f.name}(${params}) -> void:\n${bodyStr}`;
+  }).join('\n\n');
+  const mainBody = mainLines.map(l=>'\t'+l).join('\n');
+
+  // Every script is the same shape: a plain RefCounted with one build(s)
+  // method. DialogueHandler.gd (a separate, static, one-time scene file --
+  // not generated here) owns the exports/_process() and calls build(s) on
+  // whichever script you hand it, the first one included.
+  const buildBody = ['s = incoming_s', ...charInitLines, ...bgInitLines].map(l=>'\t'+l).join('\n') + '\n' + mainBody;
+  const allDecls = [charDecls, bgDecls].filter(Boolean).join('\n');
+  return `extends RefCounted
+
+var s : Scripted
+${allDecls}
+
+${funcsCode ? funcsCode+'\n\n' : ''}func build(incoming_s : Scripted) -> void:
+${buildBody}
+`;
+}
+
+// ---- Import (.gd -> state) ----
+function readBalanced(str, openIdx){
+  // str[openIdx] === '(' ; returns [innerContent, indexAfterClosingParen]
+  let depth=0, i=openIdx, start=openIdx+1;
+  while(i<str.length){
+    const c=str[i];
+    if(c==='"'){ i++; while(i<str.length && str[i]!=='"'){ if(str[i]==='\\') i++; i++; } i++; continue; }
+    if(c==='('){ depth++; i++; continue; }
+    if(c===')'){ depth--; i++; if(depth===0) return [str.slice(start,i-1), i]; continue; }
+    i++;
+  }
+  return [str.slice(start), str.length];
+}
+function splitArgs(s){
+  const args=[]; let i=0, depth=0, cur='';
+  while(i<s.length){
+    const c=s[i];
+    if(c==='"'){ let j=i+1, str='"'; while(j<s.length && s[j]!=='"'){ if(s[j]==='\\'){str+=s[j]+s[j+1]; j+=2;} else {str+=s[j]; j++;} } str+='"'; j++; cur+=str; i=j; continue; }
+    if(c==='('){ depth++; cur+=c; i++; continue; }
+    if(c===')'){ depth--; cur+=c; i++; continue; }
+    if(c===',' && depth===0){ args.push(cur.trim()); cur=''; i++; continue; }
+    cur+=c; i++;
+  }
+  if(cur.trim().length) args.push(cur.trim());
+  return args;
+}
+function unquote(s){
+  if(s===undefined) return '';
+  s=s.trim();
+  if(s.startsWith('"') && s.endsWith('"')){
+    return s.slice(1,-1).replace(/\\n/g,'\n').replace(/\\"/g,'"').replace(/\\\\/g,'\\');
+  }
+  return s;
+}
+function stripComment(line){
+  let out='', i=0;
+  while(i<line.length){
+    const c=line[i];
+    if(c==='"'){
+      out+=c; i++;
+      while(i<line.length && line[i]!=='"'){ if(line[i]==='\\'){out+=line[i]+line[i+1]; i+=2;} else {out+=line[i]; i++;} }
+      if(i<line.length){ out+=line[i]; i++; }
+      continue;
+    }
+    if(c==='#') break;
+    out+=c; i++;
+  }
+  return out;
+}
+function mergeContinuations(lines){
+  const out=[]; let i=0;
+  while(i<lines.length){
+    let cur=lines[i];
+    while(/\\\s*$/.test(cur) && i+1<lines.length){ cur = cur.replace(/\\\s*$/,'') + lines[i+1].trim(); i++; }
+    out.push(cur); i++;
+  }
+  return out;
+}
+function splitIntoFuncBlocks(lines){
+  const blocks=[]; let preamble=[]; let current=null;
+  for(const line of lines){
+    const isTopLevel = line === line.trimStart(); // no leading indentation = top-level def
+    const m = isTopLevel ? /^func\s+(\w+)\s*\(([^)]*)\)\s*->\s*void:\s*$/.exec(line.trim()) : null;
+    if(m){ if(current) blocks.push(current); current={name:m[1], params:m[2], body:[]}; }
+    else if(current) current.body.push(line);
+    else preamble.push(line);
+  }
+  if(current) blocks.push(current);
+  return {preamble, blocks};
+}
+function extractChainCalls(line, methodName){
+  // Every occurrence of ".methodName(" in the line, returning each call's raw argument string.
+  const results = []; let pos = 0;
+  while(true){
+    const found = line.indexOf('.'+methodName+'(', pos);
+    if(found===-1) break;
+    const openIdx = found + ('.'+methodName).length;
+    const [inner, after] = readBalanced(line, openIdx);
+    results.push(inner);
+    pos = after;
+  }
+  return results;
+}
+function unquotePreload(argStr){
+  const s=(argStr||'').trim();
+  const m = s.match(/^(?:preload|load)\((.*)\)$/s);
+  return unquote(m ? m[1] : s);
+}
+function parseCharInit(line){
+  const m = line.match(/^(\w+)\s*=\s*s\.character\(\)/);
+  if(!m) return null;
+  const varName=m[1];
+  let displayName='', colorHex='ffffffff';
+  const nameIdx = line.indexOf('.name(');
+  if(nameIdx!==-1){ const [inner] = readBalanced(line, nameIdx+'.name'.length); displayName = unquote(inner); }
+  const colorIdx = line.indexOf('.color(Color(');
+  if(colorIdx!==-1){
+    const colorFuncIdx = line.indexOf('Color(', colorIdx);
+    const [inner] = readBalanced(line, colorFuncIdx+'Color'.length);
+    colorHex = unquote(inner);
+  }
+  const result = {varName, displayName, colorHex, sheetPath:'', frameW:128, frameH:128, variants:[]};
+  const sheetArgs = extractChainCalls(line, 'face_sheet');
+  if(sheetArgs[0]){
+    const parts = splitArgs(sheetArgs[0]);
+    result.sheetPath = unquotePreload(parts[0]);
+    const vm = (parts[1]||'').match(/Vector2i\(\s*([^,]+?)\s*,\s*([^)]+?)\s*\)/);
+    if(vm){ result.frameW = parseInt(vm[1])||0; result.frameH = parseInt(vm[2])||0; }
+  }
+  // '.face(' never matches inside '.face_sheet(' ("_" vs "("), so this scan is safe.
+  extractChainCalls(line, 'face').forEach(argStr=>{
+    const parts = splitArgs(argStr);
+    if(parts.length) result.variants.push({name: unquote(parts[0]), col: parseInt(parts[1])||0, row: parseInt(parts[2])||0});
+  });
+  return result;
+}
+function parseBgInit(line){
+  const m = line.match(/^(\w+)\s*=\s*s\.background\(\)/);
+  if(!m) return null;
+  const varName=m[1];
+  let label='';
+  const nameIdx = line.indexOf('.name(');
+  if(nameIdx!==-1){ const [inner] = readBalanced(line, nameIdx+'.name'.length); label = unquote(inner); }
+  const result = {varName, label, sheetPath:'', frameW:480, frameH:296, variants:[]};
+  const sheetArgs = extractChainCalls(line, 'sheet');
+  if(sheetArgs[0]){
+    const parts = splitArgs(sheetArgs[0]);
+    result.sheetPath = unquotePreload(parts[0]);
+    const vm = (parts[1]||'').match(/Vector2i\(\s*([^,]+?)\s*,\s*([^)]+?)\s*\)/);
+    if(vm){ result.frameW = parseInt(vm[1])||0; result.frameH = parseInt(vm[2])||0; }
+  }
+  extractChainCalls(line, 'variant').forEach(argStr=>{
+    const parts = splitArgs(argStr);
+    if(parts.length) result.variants.push({name: unquote(parts[0]), col: parseInt(parts[1])||0, row: parseInt(parts[2])||0});
+  });
+  return result;
+}
+function inlineBranch(fname, branchFuncs){
+  const b = branchFuncs[fname];
+  if(!b) return [{type:'raw', code:'# NOTE: could not find function "'+fname+'" while importing'}];
+  let lines = b.body.map(l=>l.trim()).filter(l=>l.length);
+  if(lines[lines.length-1]==='s.resume()') lines = lines.slice(0,-1);
+  if(lines[lines.length-1]==='s.layer_start()') lines = lines.slice(0,-1);
+  if(lines[0]==='s.layer_init()') lines = lines.slice(1);
+  return parseSequence(lines, branchFuncs);
+}
+function parseLine(line, branchFuncs){
+  line = line.trim();
+  if(!line) return null;
+  let idx;
+  if(line.startsWith('s.says(')){
+    idx = line.indexOf('(');
+    const [inner] = readBalanced(line, idx);
+    const args = splitArgs(inner);
+    return {type:'dialog', charId:null, text: unquote(args[0])};
+  }
+  let m = line.match(/^(\w+)\.says\(/);
+  if(m){
+    idx = line.indexOf('(');
+    const [inner] = readBalanced(line, idx);
+    const args = splitArgs(inner);
+    const ch = state.characters.find(c=>c.varName===m[1]);
+    return {type:'dialog', charId: ch?ch.id:null, text: unquote(args[0])};
+  }
+  if(line.startsWith('s.wait(')){
+    idx=line.indexOf('('); const [inner]=readBalanced(line, idx); const args=splitArgs(inner);
+    return {type:'wait', time: parseFloat(args[0])||0, async: (args[1]||'').trim()==='true'};
+  }
+  if(line==='s.show()') return {type:'show'};
+  if(line==='s.hide()') return {type:'hide'};
+  if(line==='s.pause()') return {__pause:true};
+  if(line==='s.resume()') return {__resume:true};
+  if(line.startsWith('s.enter(')){
+    idx=line.indexOf('('); const [inner]=readBalanced(line, idx); const args=splitArgs(inner);
+    const ch = state.characters.find(c=>c.varName===(args[0]||'').trim());
+    return {type:'enter', charId: ch?ch.id:null, position: unquote(args[1]), face: unquote(args[2]||'""')};
+  }
+  if(line.startsWith('s.exit(')){
+    idx=line.indexOf('('); const [inner]=readBalanced(line, idx); const args=splitArgs(inner);
+    return {type:'exit', position: unquote(args[0])};
+  }
+  if(line.startsWith('s.show_background(')){
+    idx=line.indexOf('('); const [inner]=readBalanced(line, idx); const args=splitArgs(inner);
+    const bg = state.backgrounds.find(b=>b.varName===(args[0]||'').trim());
+    return {type:'background', bgId: bg?bg.id:null, variant: unquote(args[1]||'""')};
+  }
+  if(line.startsWith('s.goto(')){
+    idx=line.indexOf('('); const [inner]=readBalanced(line, idx); const args=splitArgs(inner);
+    return {type:'goto', path: unquotePreload(args[0]), clearBg: (args[1]||'').trim()==='true'};
+  }
+  if(line.startsWith('s.entry(')){
+    idx=line.indexOf('('); const [inner]=readBalanced(line, idx); const args=splitArgs(inner);
+    const fname=(args[4]||'').trim();
+    return {type:'entry', text:unquote(args[0]), placeholder:unquote(args[1]), hint:unquote(args[2]),
+      required:(args[3]||'').trim()==='true', waitForResult:false, funcName:fname, thenSeq: inlineBranch(fname, branchFuncs)};
+  }
+  if(line.startsWith('s.choices(')){
+    idx=line.indexOf('(');
+    const [labelInner, afterIdx] = readBalanced(line, idx);
+    const label = unquote(labelInner);
+    const options=[]; let pos=0;
+    while(true){
+      const found = line.indexOf('.option(', pos<afterIdx?afterIdx:pos);
+      if(found===-1) break;
+      const openIdx = found + '.option'.length;
+      const [inner, after] = readBalanced(line, openIdx);
+      const oargs = splitArgs(inner);
+      const oFname=(oargs[1]||'').trim();
+      options.push({label:unquote(oargs[0]), funcName:oFname, seq: inlineBranch(oFname, branchFuncs)});
+      pos = after;
+    }
+    return {type:'choice', label, waitForResult:false, options};
+  }
+  return {type:'raw', code:line};
+}
+function parseSequence(lines, branchFuncs){
+  const seq=[];
+  for(const raw of lines){
+    const node = parseLine(raw, branchFuncs);
+    if(!node) continue;
+    if(node.__pause){ if(seq.length) seq[seq.length-1].waitForResult=true; continue; }
+    if(node.__resume) continue;
+    seq.push(node);
+  }
+  return seq;
+}
+function importScript(text){
+  const merged = mergeContinuations(text.split(/\r?\n/)).map(stripComment);
+  const {blocks} = splitIntoFuncBlocks(merged);
+  const initBlock = blocks.find(b=>b.name==='_init');
+  const beginBlock = blocks.find(b=>b.name==='begin');
+  const readyBlock = blocks.find(b=>b.name==='_ready');
+  const buildBlock = blocks.find(b=>b.name==='build');
+
+  // Current files are always build(s) with character inits inline. Older
+  // files (from before DialogueHandler.gd) used _ready/begin with inits
+  // kept separately in _init -- still readable here for one-time migration.
+  const mainBlock = buildBlock || beginBlock || readyBlock;
+  if(!mainBlock) throw new Error('No build()/_ready() function found — this doesn\'t look like a compatible dialogue script.');
+
+  const branchFuncs = {};
+  blocks.forEach(b=>{ if(b.name!=='_init' && b.name!=='_ready' && b.name!=='begin' && b.name!=='build' && b.name!=='_process') branchFuncs[b.name]=b; });
+
+  const newChars=[]; let idc=1;
+  const newBgs=[]; let idbg=1;
+  const charSourceBlock = buildBlock ? buildBlock : initBlock;
+  if(charSourceBlock){
+    charSourceBlock.body.map(l=>l.trim()).filter(l=>l && l!=='s.from = self' && l!=='s = incoming_s').forEach(l=>{
+      const info = parseCharInit(l);
+      if(info) newChars.push({
+        id:idc++, varName:info.varName, displayName:info.displayName, color:'#'+info.colorHex.slice(0,6).toLowerCase(),
+        sheetPath:info.sheetPath, frameW:info.frameW, frameH:info.frameH, variants:info.variants, portraitOpen:false
+      });
+      const bgInfo = parseBgInit(l);
+      if(bgInfo) newBgs.push({
+        id:idbg++, varName:bgInfo.varName, label:bgInfo.label,
+        sheetPath:bgInfo.sheetPath, frameW:bgInfo.frameW, frameH:bgInfo.frameH, variants:bgInfo.variants, open:false
+      });
+    });
+  }
+  state.characters = newChars;
+  cid = idc;
+  state.backgrounds = newBgs;
+  bgid = idbg;
+
+  // Character/background-init lines inside build() share a block with the
+  // sequence itself (unlike _init, which is separate), so strip them out too.
+  let bodyLines = mainBlock.body.map(l=>l.trim()).filter(l=>l && l!=='s.start()' && l!=='begin()' && l!=='s = incoming_s' &&
+    !/^s\.(portrait_left|portrait_center|portrait_right)\s*=/.test(l) &&
+    !/^\w+\s*=\s*s\.character\(\)/.test(l) &&
+    !/^\w+\s*=\s*s\.background\(\)/.test(l));
+  state.sequence = parseSequence(bodyLines, branchFuncs);
+}
+document.getElementById('loadFile').onchange = (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  if(!confirm('Load "'+file.name+'"? This replaces the characters and sequence currently in the editor.')){
+    e.target.value=''; return;
+  }
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    try{
+      importScript(reader.result);
+      document.getElementById('filename').value = file.name;
+      document.getElementById('output').value='';
+      renderAll();
+    }catch(err){
+      alert('Could not import this file: ' + err.message);
+    }
+    e.target.value='';
+  };
+  reader.readAsText(file);
+};
+
+document.getElementById('genBtn').onclick=()=>{
+  document.getElementById('output').value = generateScript();
+};
+document.getElementById('copyBtn').onclick=async()=>{
+  const out=document.getElementById('output');
+  if(!out.value) out.value=generateScript();
+  try{ await navigator.clipboard.writeText(out.value); }catch(e){ out.select(); document.execCommand('copy'); }
+};
+document.getElementById('dlBtn').onclick=()=>{
+  const out=document.getElementById('output');
+  if(!out.value) out.value=generateScript();
+  const name = document.getElementById('filename').value || 'dialogue_scene.gd';
+  const blob = new Blob([out.value], {type:'text/plain'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; a.click();
+};
+
+// ---- Project save/load ----
+document.getElementById('assetPrefix').oninput=e=>state.assetPrefix=e.target.value;
+document.getElementById('assetPrefix').onblur=renderAll;
+document.getElementById('scriptPrefix').oninput=e=>state.scriptPrefix=e.target.value;
+document.getElementById('scriptPrefix').onblur=renderAll;
+
+document.getElementById('saveProjBtn').onclick=()=>{
+  const data = JSON.stringify({version:2, characters:state.characters, backgrounds:state.backgrounds, sequence:state.sequence, filename:document.getElementById('filename').value, assetPrefix:state.assetPrefix, scriptPrefix:state.scriptPrefix}, null, 2);
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([data],{type:'application/json'}));
+  a.download=(document.getElementById('filename').value||'dialogue_scene').replace(/\.gd$/,'')+'.vnproj.json'; a.click();
+};
+document.getElementById('loadProjBtn').onclick=()=>document.getElementById('loadProjFile').click();
+document.getElementById('loadProjFile').onchange=(e)=>{
+  const file=e.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=()=>{
+    try{
+      const d=JSON.parse(reader.result);
+      if(!Array.isArray(d.characters)||!Array.isArray(d.sequence)) throw new Error('Not a project file.');
+      d.characters.forEach(c=>{ if(!Array.isArray(c.variants)) c.variants=[]; c.variants=c.variants.filter(v=>'col' in v); if(c.sheetPath===undefined){c.sheetPath=''; c.frameW=128; c.frameH=128;} if(c.portraitOpen===undefined) c.portraitOpen=false; });
+      const bgs = Array.isArray(d.backgrounds) ? d.backgrounds : [];
+      bgs.forEach(b=>{ if(!Array.isArray(b.variants)) b.variants=[]; if(b.open===undefined) b.open=false; b.frameW=480; b.frameH=296; });
+      state.characters=d.characters; state.backgrounds=bgs; state.sequence=d.sequence;
+      state.assetPrefix = d.assetPrefix || '';
+      state.scriptPrefix = d.scriptPrefix || '';
+      cid=Math.max(0,...state.characters.map(c=>c.id))+1;
+      bgid=bgs.length?Math.max(0,...bgs.map(b=>b.id))+1:1;
+      if(d.filename) document.getElementById('filename').value=d.filename;
+      document.getElementById('output').value='';
+      renderAll();
+    }catch(err){ alert('Could not load project: '+err.message); }
+    e.target.value='';
+  };
+  reader.readAsText(file);
+};
+
+renderAll();
+</script>
+</body>
+</html>

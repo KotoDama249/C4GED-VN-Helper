@@ -1,0 +1,163 @@
+{
+  "version": 2,
+  "characters": [
+    {
+      "id": 1,
+      "varName": "akisa",
+      "displayName": "Akisa",
+      "color": "#ffa5f1",
+      "sheetPath": "res://VN/Images/Characters/Part 1/akisa.png",
+      "frameW": 195,
+      "frameH": 296,
+      "variants": [],
+      "portraitOpen": false
+    }
+  ],
+  "backgrounds": [
+    {
+      "id": 1,
+      "varName": "placeholder",
+      "label": "Placeholder",
+      "sheetPath": "res://VN/Images/Backgrounds/placeholder.png",
+      "frameW": 480,
+      "frameH": 296,
+      "variants": [],
+      "open": false
+    }
+  ],
+  "sequence": [
+    {
+      "type": "dialog",
+      "charId": null,
+      "text": "Welcome to the Dialogue Showcase. This will test parts of the dialogue/visual novel system for C4GED: Containment Security."
+    },
+    {
+      "type": "dialog",
+      "charId": 1,
+      "text": "This is a test of dialogue."
+    },
+    {
+      "type": "dialog",
+      "charId": 1,
+      "text": "Notice the white-pink name \"Akisa\" somewhere onscreen. This is the current speaker."
+    },
+    {
+      "type": "dialog",
+      "charId": null,
+      "text": "This line has no speaker."
+    },
+    {
+      "type": "enter",
+      "charId": 1,
+      "position": "right",
+      "face": ""
+    },
+    {
+      "type": "dialog",
+      "charId": 1,
+      "text": "This is a test of showing a character. The input to say this line is put in after the input to show the character. The character has been placed in the \"Right\" slot."
+    },
+    {
+      "type": "exit",
+      "position": "right"
+    },
+    {
+      "type": "enter",
+      "charId": 1,
+      "position": "left",
+      "face": ""
+    },
+    {
+      "type": "dialog",
+      "charId": 1,
+      "text": "This is the \"Left\" slot."
+    },
+    {
+      "type": "exit",
+      "position": "left"
+    },
+    {
+      "type": "enter",
+      "charId": 1,
+      "position": "center",
+      "face": ""
+    },
+    {
+      "type": "dialog",
+      "charId": 1,
+      "text": "And this is the \"Center\" slot."
+    },
+    {
+      "type": "dialog",
+      "charId": 1,
+      "text": "These slots are meant to be used to show characters that are visible to the character's eyes, or who's currently speaking."
+    },
+    {
+      "type": "choice",
+      "label": "This is a choice prompt.",
+      "waitForResult": true,
+      "options": [
+        {
+          "label": "Option 1",
+          "funcName": "opt1",
+          "seq": [
+            {
+              "type": "dialog",
+              "charId": null,
+              "text": "This is the line for picking Option 1."
+            }
+          ]
+        },
+        {
+          "label": "Option 2",
+          "funcName": "opt2",
+          "seq": [
+            {
+              "type": "dialog",
+              "charId": null,
+              "text": "This is the line for picking Option 2."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "exit",
+      "position": "center"
+    },
+    {
+      "type": "background",
+      "bgId": 1,
+      "variant": ""
+    },
+    {
+      "type": "dialog",
+      "charId": null,
+      "text": "This is a test of the background change."
+    },
+    {
+      "type": "enter",
+      "charId": 1,
+      "position": "center",
+      "face": ""
+    },
+    {
+      "type": "dialog",
+      "charId": 1,
+      "text": "That is the end of the current showcase."
+    },
+    {
+      "type": "dialog",
+      "charId": 1,
+      "text": "Repeating script. . ."
+    },
+    {
+      "type": "goto",
+      "path": "res://VN/Scripts/dialogue_scene.gd",
+      "clearBg": true
+    }
+  ],
+  "filename": "dialogue_scene.gd",
+  "assetPrefix": "res://VN/Images/Characters/",
+  "scriptPrefix": "res://VN/Scripts/"
+}
